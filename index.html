@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2027년 양로시설 스마트 평가대비 시뮬레이터</title>
+    <!-- PDF 생성을 위한 html2pdf 라이브러리 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --bg-base: #F5F5F7;
+            --bg-card: #FFFFFF;
+            --blue-main: #007AFF;
+            --text-dark: #1D1D1F;
+            --text-gray: #86868B;
+            --border-line: #E5E5EA;
+            --red-alert: #FF3B30;
+            
+            /* 티어별 색상 */
+            --color-tier-3: #E1F0FF; /* 탁월 */
+            --color-tier-2: #E8F5E9; /* 우수 */
+            --color-tier-1: #FFF9C4; /* 양호 */
+            --color-tier-05: #FFE0B2; /* 미흡 */
+            --color-tier-0: #FFEBEE; /* 매우미흡 */
+            
+            --border-tier-3: #007AFF;
+            --border-tier-2: #4CAF50;
+            --border-tier-1: #FBC02D;
+            --border-tier-05: #FF9800;
+            --border-tier-0: #F44336;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+            background-color: var(--bg-base);
+            margin: 0;
+            padding: 0;
+            color: var(--text-dark);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            font-size: 14px;
+        }
+
+        /* 왼쪽 사이드바 영역 */
+        .sidebar {
+            width: 320px;
+            background-color: var(--bg-base);
+            border-right: 1px solid var(--border-line);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            overflow-y: auto;
+            z-index: 10;
+        }
+        
+        .sidebar-title {
+            padding: 30px 20px 20px 20px;
+        }
+        .sidebar-title h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .score-board {
+            margin: 0 20px 20px 20px;
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+        .score-label { font-size: 13px; color: var(--text-gray); font-weight: 600; margin-bottom: 5px; }
+        .score-number { font-size: 38px; font-weight: 700; color: var(--blue-main); margin: 0; }
+        .score-percent { font-size: 14px; color: var(--text-gray); margin-top: 5px; }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 0 20px 20px 20px;
+        }
+        .btn-consult {
+            background-color: var(--blue-main);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn-consult:hover { opacity: 0.8; }
+        .btn-reset {
+            background: transparent;
+            border: 1px solid var(--red-alert);
+            color: var(--red-alert);
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-reset:hover { background-color: #FFF0F0; }
+
+        .nav-list {
+            list-style: none;
+            padding: 0 10px;
+            margin: 0 0 20px 0;
+        }
+        .nav-item {
+            padding: 14px 16px;
+            margin-bottom: 4px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-dark);
+            transition: background-color 0.2s;
+        }
+        .nav-item:hover { background-color: #E5E5EA; }
+        .nav-item.active { background-color: var(--blue-main); color: white; }
+
+        /* 메인 컨텐츠 영역 */
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: var(--bg-card);
+        }
+
+        .top-toolbar {
+            padding: 15px 40px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            background-color: #FAFAFC;
+            border-bottom: 1px solid var(--border-line);
+        }
+        .btn-tool {
+            background-color: white;
+            border: 1px solid #D1D1D6;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #48484A;
+            transition: all 0.2s;
+        }
+        .btn-tool:hover { background-color: #F2F2F7; }
+
+        .scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            scroll-behavior: smooth;
+        }
+
+        .domain-header {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-line);
+        }
+
+        .indicator-card {
+            background-color: var(--bg-base);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border-line);
+        }
+        
+        .indicator-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .indicator-title { font-size: 18px; font-weight: 700; }
+        .indicator-badge {
+            background-color: var(--bg-card);
+            color: var(--blue-main);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 700;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1.3fr 0.7fr;
+            gap: 20px;
+        }
+
+        /* 왼쪽 평가내용 점검 패널 */
+        .content-panel {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--border-line);
+        }
+        .panel-title {
+            font-size: 13px;
+            color: var(--text-gray);
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        
+        .check-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--border-line);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 8px;
+        }
+        .check-item:last-child { border-bottom: none; }
+        .check-item:hover { background-color: #F8F8F8; }
+        .check-item.checked { background-color: #F0F8FF; }
+        
+        .custom-checkbox {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 2px solid #C7C7CC;
+            margin-right: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .check-item.checked .custom-checkbox {
+            background-color: var(--blue-main);
+            border-color: var(--blue-main);
+        }
+        .check-item.checked .custom-checkbox::after {
+            content: '';
+            width: 4px;
+            height: 9px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            margin-bottom: 2px;
+        }
+
+        .custom-radio {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #C7C7CC;
+            margin-right: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .check-item.checked .custom-radio { border-color: var(--blue-main); }
+        .check-item.checked .custom-radio::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background-color: var(--blue-main);
+            border-radius: 50%;
+        }
+
+        .item-text { font-size: 14.5px; line-height: 1.4; user-select: none; }
+        .badge-ess {
+            background-color: var(--red-alert);
+            color: white;
+            font-size: 11px;
+            padding: 3px 6px;
+            border-radius: 6px;
+            margin-right: 6px;
+            font-weight: 700;
+        }
+
+        /* 오른쪽 매뉴얼 자동 산정 인디케이터 (작고 클릭 안됨) */
+        .tier-panel {
+            background-color: transparent;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tier-box {
+            display: flex;
+            align-items: center;
+            padding: 10px 14px;
+            border-radius: 12px;
+            background-color: white;
+            border: 1px solid var(--border-line);
+            opacity: 0.5;
+            transition: all 0.3s ease;
+        }
+        
+        .tier-box.active {
+            opacity: 1;
+            transform: scale(1.02);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        /* 활성화된 티어별 색상 적용 */
+        .tier-box.active.tier-3 { background-color: var(--color-tier-3); border-color: var(--border-tier-3); }
+        .tier-box.active.tier-2 { background-color: var(--color-tier-2); border-color: var(--border-tier-2); }
+        .tier-box.active.tier-1 { background-color: var(--color-tier-1); border-color: var(--border-tier-1); }
+        .tier-box.active.tier-05 { background-color: var(--color-tier-05); border-color: var(--border-tier-05); }
+        .tier-box.active.tier-0 { background-color: var(--color-tier-0); border-color: var(--border-tier-0); }
+
+        .tier-emoji { font-size: 18px; margin-right: 12px; }
+        .tier-info { display: flex; flex-direction: column; }
+        .tier-name { font-size: 14px; font-weight: 700; color: var(--text-dark); margin-bottom: 2px;}
+        .tier-desc { font-size: 12px; color: #666; }
+
+        /* 컨설팅 모달 */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            background-color: var(--bg-base);
+            width: 800px; max-width: 90%; max-height: 85vh;
+            border-radius: 20px;
+            overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            padding: 40px;
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 30px;
+        }
+        .modal-header h2 { margin: 0; font-size: 24px; }
+        .btn-close {
+            background: none; border: none; font-size: 30px; color: var(--text-gray); cursor: pointer;
+        }
+        .report-section {
+            background-color: white; border-radius: 16px; padding: 24px; margin-bottom: 20px;
+        }
+        .report-section h3 { margin: 0 0 15px 0; font-size: 16px; border-bottom: 1px solid var(--border-line); padding-bottom: 10px; color: var(--blue-main);}
+        .miss-item { font-size: 14px; margin-bottom: 8px; line-height: 1.5;}
+        .consult-tip { display: block; font-size: 13px; color: #D32F2F; margin-top: 4px; padding-left: 10px;}
+
+        /* 하단 저작권 푸터 */
+        .footer-copyright {
+            text-align: center;
+            padding: 30px 20px;
+            color: #8E8E93;
+            font-size: 12px;
+            border-top: 1px solid var(--border-line);
+            margin-top: 40px;
+        }
+
+        /* 인쇄 최적화 */
+        @media print {
+            .sidebar, .top-toolbar, .btn-consult { display: none !important; }
+            .main-container { overflow: visible !important; height: auto !important; }
+            .scroll-area { overflow: visible !important; padding: 0 !important; }
+            body { background-color: white; }
+            .indicator-card { break-inside: avoid; border: 1px solid #ccc; box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-title">
+            <h1>2027년 양로시설 스마트 평가대비 시뮬레이터</h1>
+        </div>
+        
+        <div class="score-board">
+            <div class="score-label">예상 환산 총점</div>
+            <div class="score-number" id="masterScore">0.0</div>
+            <div class="score-percent" id="masterPercent">100점 만점 기준 (0.0% 달성)</div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn-consult" onclick="openConsultingReport()">최종 평가하기 (컨설팅 리포트)</button>
+            <button class="btn-reset" onclick="resetData()">진단 데이터 전체 초기화</button>
+        </div>
+
+        <ul class="nav-list" id="navList"></ul>
+    </div>
+
+    <div class="main-container">
+        <div class="top-toolbar">
+            <button class="btn-tool" onclick="window.print()">🖨️ 인쇄하기</button>
+            <button class="btn-tool" onclick="saveAsPDF()">💾 PDF로 저장</button>
+        </div>
+        <div class="scroll-area" id="exportArea">
+            <div id="mainContent"></div>
+            
+            <div class="footer-copyright">
+                ©2026 한국노인복지중앙회 최영경 All rights reserved.<br>
+                무료로 자유롭게 사용가능하지만 무단배포는 금지합니다. 프로그램 관련문의는 cyk0009@gmail.com로 부탁드립니다.
+            </div>
+        </div>
+    </div>
+
+    <!-- 컨설팅 리포트 모달 -->
+    <div class="modal-overlay" id="reportModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📊 2027 평가대비 AI 실무 컨설팅 리포트</h2>
+                <button class="btn-close" onclick="closeReport()">&times;</button>
+            </div>
+            <div id="reportBody"></div>
+        </div>
+    </div>
+
+<script>
+    const manualData = [
+        {
+            id: 'A', title: 'A. 시설 및 환경', max: 9,
+            indicators: [
+                {
+                    id: 'A1', title: 'A1. 시설 안전관리 노력', maxScore: 3, type: 'check', essCount: 2,
+                    items: [
+                        { id: 'A1_1', text: '시설 특성에 맞게 안전관리계획서를 마련하고 있다.', ess: true, tip: '보건복지부 안전관리 매뉴얼 원본을 그대로 비치하면 미인정됩니다. 시설 특성에 맞게 수정하십시오.' },
+                        { id: 'A1_2', text: '안전관리계획서에 따라 자체 모의훈련을 실시하고 있다.', ess: true, tip: '훈련 결과보고서에 현장 사진과 대피 완료시간을 반드시 기록해야 합니다.' },
+                        { id: 'A1_3', text: '안전사고에 대한 예방교육(대처교육)을 실시하고 있다.', ess: false },
+                        { id: 'A1_4', text: '자체 안전점검 결과에 따라 사후 조치를 하고 있다.', ess: false },
+                        { id: 'A1_5', text: '시설은 소방안전시설 설치 의무사항을 준수하고 있다.', ess: false, tip: '건축물대장 면적과 실제 설치된 소방시설이 일치하는지 확인 바랍니다.' }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '5개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '필수 모두 포함 4개', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '필수 모두 포함 3개', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '필수 2개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '필수 미포함 / 1개 이하', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 5: 3, 4: 2, 3: 1, 2: 0.5 }
+                },
+                {
+                    id: 'A2', title: 'A2. 시설 편의증진 노력', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'A2_1', text: '시설은 편의시설을 법적 규정대로 설치하고 있다.', ess: false },
+                        { id: 'A2_2', text: '시설 내·외부에 운동을 할 수 있는 공간과 기구가 확보되어 있다.', ess: false, tip: '양로시설 설비기준(입소자 1명당 침실 면적 5.0㎡ 등)이 충족되어야 인정됩니다.' },
+                        { id: 'A2_3', text: '휴식을 취하고 문화·오락을 할 수 있는 공간과 설비가 확보되어 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '3개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '2개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '1개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 항목 없음', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 3: 3, 2: 2, 1: 1 }
+                },
+                {
+                    id: 'A3', title: 'A3. 시설 환경개선 노력', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'A3_1', text: '시설의 환경에 대한 유지·보수를 실시한 실적이 있다.', ess: false },
+                        { id: 'A3_2', text: '시설 내 기자재를 주기적으로 관리하고 있다.', ess: false, tip: '기자재 사용 연한 관리 대장을 연 1회 갱신하십시오.' },
+                        { id: 'A3_3', text: '시설 내 각 실은 청결하게 유지되고 있다.', ess: false },
+                        { id: 'A3_4', text: '시설은 냉·난방 시설을 갖추고 있다.', ess: false },
+                        { id: 'A3_5', text: '시설은 위생 관리 및 감염 예방을 위해 노력하고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '5개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '4개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '3개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '2개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '1개 이하 항목 해당', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 5: 3, 4: 2, 3: 1, 2: 0.5 }
+                }
+            ]
+        },
+        {
+            id: 'B', title: 'B. 재정 및 조직운영', max: 28,
+            indicators: [
+                {
+                    id: 'B1', title: 'B1. 사업비', maxScore: 4, type: 'radio',
+                    items: [
+                        { id: 'B1_1', text: '결산서 기준 사업비 지출 비율이 18.0% 초과', score: 4 },
+                        { id: 'B1_2', text: '14.0% 초과 ~ 18.0% 이하', score: 3 },
+                        { id: 'B1_3', text: '10.0% 초과 ~ 14.0% 이하', score: 2 },
+                        { id: 'B1_4', text: '6.0% 초과 ~ 10.0% 이하', score: 1 },
+                        { id: 'B1_5', text: '6.0% 이하', score: 0 }
+                    ],
+                    tiers: [
+                        { score: 4, name: '탁월 (4점)', desc: '18.0% 초과', class: 'tier-3', emoji: '🏆' },
+                        { score: 3, name: '우수 (3점)', desc: '14.0% ~ 18.0%', class: 'tier-2', emoji: '🟢' },
+                        { score: 2, name: '양호 (2점)', desc: '10.0% ~ 14.0%', class: 'tier-1', emoji: '🟡' },
+                        { score: 1, name: '미흡 (1점)', desc: '6.0% ~ 10.0%', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '6.0% 이하', class: 'tier-0', emoji: '🔴' }
+                    ]
+                },
+                {
+                    id: 'B2', title: 'B2. 직원충원률', maxScore: 4, type: 'radio',
+                    items: [
+                        { id: 'B2_1', text: '월별 확보 직원 수 100.0% 이상', score: 4 },
+                        { id: 'B2_2', text: '90.0% 이상 ~ 100.0% 미만', score: 3 },
+                        { id: 'B2_3', text: '80.0% 이상 ~ 90.0% 미만', score: 2 },
+                        { id: 'B2_4', text: '70.0% 이상 ~ 80.0% 미만', score: 1 },
+                        { id: 'B2_5', text: '70.0% 미만', score: 0 }
+                    ],
+                    tiers: [
+                        { score: 4, name: '탁월 (4점)', desc: '100.0% 이상', class: 'tier-3', emoji: '🏆' },
+                        { score: 3, name: '우수 (3점)', desc: '90.0% ~ 100.0%', class: 'tier-2', emoji: '🟢' },
+                        { score: 2, name: '양호 (2점)', desc: '80.0% ~ 90.0%', class: 'tier-1', emoji: '🟡' },
+                        { score: 1, name: '미흡 (1점)', desc: '70.0% ~ 80.0%', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '70.0% 미만', class: 'tier-0', emoji: '🔴' }
+                    ]
+                },
+                {
+                    id: 'B3', title: 'B3. 직원근속률', maxScore: 4, type: 'radio',
+                    items: [
+                        { id: 'B3_1', text: '30개월 이상 근속 직원 비율 80.0% 초과', score: 4 },
+                        { id: 'B3_2', text: '60.0% 초과 ~ 80.0% 이하', score: 3 },
+                        { id: 'B3_3', text: '40.0% 초과 ~ 60.0% 이하', score: 2 },
+                        { id: 'B3_4', text: '20.0% 초과 ~ 40.0% 이하', score: 1 },
+                        { id: 'B3_5', text: '20.0% 이하', score: 0 }
+                    ],
+                    tiers: [
+                        { score: 4, name: '탁월 (4점)', desc: '80.0% 초과', class: 'tier-3', emoji: '🏆' },
+                        { score: 3, name: '우수 (3점)', desc: '60.0% ~ 80.0%', class: 'tier-2', emoji: '🟢' },
+                        { score: 2, name: '양호 (2점)', desc: '40.0% ~ 60.0%', class: 'tier-1', emoji: '🟡' },
+                        { score: 1, name: '미흡 (1점)', desc: '20.0% ~ 40.0%', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '20.0% 이하', class: 'tier-0', emoji: '🔴' }
+                    ]
+                },
+                {
+                    id: 'B4', title: 'B4. 직원채용의 공정성', maxScore: 2, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'B4_1', text: '운영규정에 의한 인사위원회를 구성하고 채용', ess: false },
+                        { id: 'B4_2', text: '인사위원회 또는 면접에 외부위원 참여', ess: false, tip: '시설 소속 직원이나 동일 법인 임직원은 외부위원으로 인정되지 않으므로 주의하십시오.' },
+                        { id: 'B4_3', text: '3년간 공개채용 비율이 100%이다.', ess: false, tip: '자체 홈페이지 외에 지자체, 워크넷 등에 15일 이상 공고한 캡처본이 필요합니다.' },
+                        { id: 'B4_4', text: '차별적인 내용(성별, 나이, 종교 등)을 명시하지 않는다.', ess: false },
+                        { id: 'B4_5', text: '심사기준, 채점 등의 관련 근거 보관', ess: false }
+                    ],
+                    tiers: [
+                        { score: 2, name: '탁월 (2점)', desc: '5개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 1.5, name: '우수 (1.5점)', desc: '4개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '3개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '2개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '1개 이하 항목 해당', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 5: 2, 4: 1.5, 3: 1, 2: 0.5 }
+                },
+                {
+                    id: 'B5', title: 'B5. 시설장 및 최고중간관리자 전문성', maxScore: 4, type: 'check_split',
+                    items: [
+                        { id: 'B5_1', text: '[시설장] 사회복지사 1급 소지', group: 'A' },
+                        { id: 'B5_2', text: '[시설장] 시설 근무경력 10년 이상', group: 'A' },
+                        { id: 'B5_3', text: '[시설장] 동일분야 경력 7년 이상', group: 'A' },
+                        { id: 'B5_4', text: '[시설장] 매년 관리자 역량 강화 교육', group: 'A', tip: '일반 직무교육이 아닌 관리자(리더십, 조직관리 등) 대상 교육 수료증이어야 합니다.' },
+                        { id: 'B5_5', text: '[최고중간] 사회복지사 1급 소지', group: 'B' },
+                        { id: 'B5_6', text: '[최고중간] 시설 근무경력 7년 이상', group: 'B' },
+                        { id: 'B5_7', text: '[최고중간] 동일분야 경력 5년 이상', group: 'B' },
+                        { id: 'B5_8', text: '[최고중간] 매년 관리자 역량 강화 교육', group: 'B' }
+                    ],
+                    tiers: [
+                        { score: 4, name: '탁월 (4점)', desc: '양쪽 모두 4개 만족 시 (각각 합산)', class: 'tier-3', emoji: '🏆' },
+                        { score: 3, name: '우수 (3점)', desc: '일부 누락 시 차등 부여', class: 'tier-2', emoji: '🟢' },
+                        { score: 2, name: '양호 (2점)', desc: '일부 누락 시 차등 부여', class: 'tier-1', emoji: '🟡' },
+                        { score: 1, name: '미흡 (1점)', desc: '일부 누락 시 차등 부여', class: 'tier-05', emoji: '🟠' }
+                    ]
+                },
+                {
+                    id: 'B6', title: 'B6. 직원의 전문성', maxScore: 2, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'B6_1', text: '시설 직원은 직무 관련 자격을 갖추고 있다.', ess: false },
+                        { id: 'B6_2', text: '직원 대상 수퍼비전(회의 또는 면담) 진행 여부를 확인한다.', ess: false },
+                        { id: 'B6_3', text: '직원 대상 교육체계가 마련되어 있다.', ess: false },
+                        { id: 'B6_4', text: '직원의 역량 강화를 위한 내·외부 교육 평가를 실시하고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 2, name: '탁월 (2점)', desc: '4개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 1.5, name: '우수 (1.5점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 항목 없음', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 4: 2, 3: 1.5, 2: 1, 1: 0.5 }
+                },
+                {
+                    id: 'B7', title: 'B7. 직원 역량 강화', maxScore: 2, type: 'radio_split',
+                    items: [
+                        { id: 'B7_A1', text: '[교육활동비] 1인당 연 15만원 초과 (1점)', score: 1, group: 'A' },
+                        { id: 'B7_A2', text: '[교육활동비] 10만원 초과 ~ 15만원 이하 (0.8점)', score: 0.8, group: 'A' },
+                        { id: 'B7_A3', text: '[교육활동비] 5만원 초과 ~ 10만원 이하 (0.6점)', score: 0.6, group: 'A' },
+                        { id: 'B7_A4', text: '[교육활동비] 1만원 초과 ~ 5만원 이하 (0.4점)', score: 0.4, group: 'A' },
+                        { id: 'B7_A5', text: '[교육활동비] 1만원 미만 인원 발생 (0점)', score: 0, group: 'A' },
+                        
+                        { id: 'B7_B1', text: '[교육시간] 1인당 연 16시간 초과 (1점)', score: 1, group: 'B' },
+                        { id: 'B7_B2', text: '[교육시간] 10시간 초과 ~ 16시간 이하 (0.8점)', score: 0.8, group: 'B' },
+                        { id: 'B7_B3', text: '[교육시간] 5시간 초과 ~ 10시간 이하 (0.6점)', score: 0.6, group: 'B' },
+                        { id: 'B7_B4', text: '[교육시간] 1시간 초과 ~ 5시간 이하 (0.4점)', score: 0.4, group: 'B' },
+                        { id: 'B7_B5', text: '[교육시간] 1시간 이하 인원 발생 (0점)', score: 0, group: 'B' }
+                    ],
+                    tiers: [
+                        { score: 2, name: '최고점 (2점)', desc: '교육활동비 1점 + 교육시간 1점', class: 'tier-3', emoji: '🏆' }
+                    ]
+                },
+                {
+                    id: 'B8', title: 'B8. 직원복지', maxScore: 2, type: 'check', essCount: 2,
+                    items: [
+                        { id: 'B8_1', text: '직원의 복무규정이 마련되어 있다.', ess: true },
+                        { id: 'B8_2', text: '규정된 휴가제도를 준수하고 있다.', ess: true },
+                        { id: 'B8_3', text: '정기적인 포상제도를 시행하고 있다.', ess: false },
+                        { id: 'B8_4', text: '모든 직원을 대상으로 상해보험(공제)에 가입하고 있다.', ess: false },
+                        { id: 'B8_5', text: '직원의 고충처리를 위한 절차가 있고, 이를 실행하고 있다.', ess: false },
+                        { id: 'B8_6', text: '사회복지시설 종사자 대체인력지원 사업을 이용하고 있다.', ess: false },
+                        { id: 'B8_7', text: '법인에서 정기적으로 별도 수당을 지급하고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 2, name: '탁월 (2점)', desc: '7개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 1.5, name: '우수 (1.5점)', desc: '필수 모두 포함 6개', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '필수 모두 포함 5개', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '필수 모두 포함 4개', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '필수 미포함 / 3개 이하', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 7: 2, 6: 1.5, 5: 1, 4: 0.5 }
+                },
+                {
+                    id: 'B9', title: 'B9. 직원의 인권 및 안전보장', maxScore: 2, type: 'check', essCount: 1,
+                    items: [
+                        { id: 'B9_1', text: '직원의 인권과 안전을 보장할 수 있는 관련 내부규정 또는 지침이 있다.', ess: true },
+                        { id: 'B9_2', text: '직원 고용계약 시 합당한 계약협상이 이루어지고 있다.', ess: false },
+                        { id: 'B9_3', text: '직원 인권보호를 위한 인권 교육을 실시하고 있다.', ess: false },
+                        { id: 'B9_4', text: '직원의 인권과 안전보장을 위한 회의 또는 간담회를 실시하고, 내용을 공유하고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 2, name: '탁월 (2점)', desc: '4개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 1.5, name: '우수 (1.5점)', desc: '필수 포함 3개 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '필수 포함 2개 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '필수 항목 1개 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 4: 2, 3: 1.5, 2: 1, 1: 0.5 }
+                },
+                {
+                    id: 'B10', title: 'B10. 지역사회와의 연계활동', maxScore: 2, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'B10_1', text: '지역행사에 생활인이 참여하고 있다.', ess: false },
+                        { id: 'B10_2', text: '지역주민이 참가할 수 있는 자체행사를 기획하여 운영하고 있다.', ess: false },
+                        { id: 'B10_3', text: '의료기관과 공식적으로 연계하고 있다.', ess: false },
+                        { id: 'B10_4', text: '의료기관 이외의 지역단체와 공식적으로 연계하고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 2, name: '탁월 (2점)', desc: '4개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 1.5, name: '우수 (1.5점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 4: 2, 3: 1.5, 2: 1, 1: 0.5 }
+                }
+            ]
+        },
+        {
+            id: 'C', title: 'C. 프로그램 및 서비스', max: 38,
+            indicators: [
+                {
+                    id: 'C1', title: 'C1. 접수절차', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'C1_1', text: '서비스 이용에 대한 접수, 처리 및 승인 절차규정이 구비되어 있다.', ess: false },
+                        { id: 'C1_2', text: '접수 면접 담당자가 배치되어 있다.', ess: false },
+                        { id: 'C1_3', text: '접수 면접에 대한 상담기록지가 구비되어 있다.', ess: false },
+                        { id: 'C1_4', text: '서비스 이용 희망자가 서비스 접수, 대기 및 처리 절차를 확인 가능하다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '4개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
+                },
+                {
+                    id: 'C2', title: 'C2. 욕구사정', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'C2_1', text: '초기 개별상담 및 기록하고 있다.', ess: false },
+                        { id: 'C2_2', text: '입소생활인의 신상에 대한 기본적 서류 및 기록을 수집·보관하고 있다.', ess: false },
+                        { id: 'C2_3', text: '욕구사정 척도가 문서화되어 있다.', ess: false, tip: 'ADL, 인지력 등 최소 3개 부분 이상을 포함한 평가 척도여야 합니다.' },
+                        { id: 'C2_4', text: '문제 사정 및 서비스 지원계획을 수립하고 있다.', ess: false },
+                        { id: 'C2_5', text: '모든 생활인에 대해 연 1회 이상 정기적인 재사정이 이루지고 있다.', ess: false },
+                        { id: 'C2_6', text: '직원과 관리자의 참여에 의한 사정회의가 실시되고 있다.', ess: false },
+                        { id: 'C2_7', text: '욕구사정의 결과가 (재)사정에 잘 반영되어 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '6개 이상 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '5개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '4개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '3개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '2개 이하', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 7: 3, 6: 3, 5: 2, 4: 1, 3: 0.5 }
+                },
+                {
+                    id: 'C3', title: 'C3. 사례관리', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'C3_1', text: '분기별 1회 이상 사례관리를 실시하고 있다.', ess: false },
+                        { id: 'C3_2', text: '사례관리가 기록·관리되고 있다.', ess: false },
+                        { id: 'C3_3', text: '향후 서비스 계획에 사례관리 결과가 반영되고 있다.', ess: false },
+                        { id: 'C3_4', text: '다양한 외부 전문가가 사례관리에 참여하고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '4개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
+                },
+                {
+                    id: 'C4', title: 'C4. 식사서비스', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'C4_1', text: '건강상태(소화능력 및 치아상태)를 고려한 식사가 제공되고 있다.', ess: false },
+                        { id: 'C4_2', text: '연 2회 이상 식단과 관련한 생활인의 욕구조사를 파악하여 반영한다.', ess: false },
+                        { id: 'C4_3', text: '특정한 음식을 거부할 때 유사한 영양적 가치를 지닌 음식이 제공된다.', ess: false },
+                        { id: 'C4_4', text: '주간 식단을 게시하고, 영양정보를 분기별로 제공하거나 교육하고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '4개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
+                },
+                {
+                    id: 'C5', title: 'C5. 건강검진 및 관리', maxScore: 3, type: 'radio',
+                    items: [
+                        { id: 'C5_1', text: '1, 2차 건강검진 실시 및 전체 생활인 대상 전문의 후속조치', score: 3 },
+                        { id: 'C5_2', text: '1, 2차 건강검진 실시 및 일부 생활인 대상 후속조치', score: 2 },
+                        { id: 'C5_3', text: '1, 2차 건강검진만 실시', score: 1 },
+                        { id: 'C5_4', text: '1차 건강검진만 실시', score: 0.5 },
+                        { id: 'C5_5', text: '미실시', score: 0 }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '전체적인 후속조치', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '부분적인 후속조치', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '1, 2차 실시', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '1차 실시', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '미실시', class: 'tier-0', emoji: '🔴' }
+                    ]
+                },
+                {
+                    id: 'C6', title: 'C6. 건강관리 및 예방교육', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'C6_1', text: '의사 처방에 의한 투약관리 및 식사와 영양적 보충물을 제공하고 있다.', ess: false },
+                        { id: 'C6_2', text: '간호일지가 매일 기록되고 있다.', ess: false },
+                        { id: 'C6_3', text: '직원 및 생활인을 대상으로 건강관리 및 예방교육을 실시하고 있다.', ess: false },
+                        { id: 'C6_4', text: '의치, 보철 또는 임플란트 시술이 필요한 생활인에게 서비스를 제공했거나 노력한다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '4개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
+                },
+                {
+                    id: 'C7', title: 'C7. 응급환자 관리', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'C7_1', text: '응급환자 발생 시 즉시 조치한다.', ess: false },
+                        { id: 'C7_2', text: '야간에 응급환자 발생 시 당직자가 대처한다.', ess: false },
+                        { id: 'C7_3', text: '모든 상황은 기록으로 남긴다.', ess: false },
+                        { id: 'C7_4', text: '연 2회 이상 응급환자 발생 시 대응훈련을 하고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '4개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
+                },
+                {
+                    id: 'C8', title: 'C8. 기능회복프로그램', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'C8_1', text: '기능회복 프로그램을 3개 이상 진행하고 있다.', ess: false },
+                        { id: 'C8_2', text: '각 사업계획서가 구체적으로 제시되어 있다.', ess: false },
+                        { id: 'C8_3', text: '프로그램 수행과정이 계획서에 따라 진행되고 있다.', ess: false },
+                        { id: 'C8_4', text: '강사(내·외부)는 프로그램 전문 자격증을 소지하고 있다.', ess: false },
+                        { id: 'C8_5', text: '평가가 적절하게 실시되고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '5개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '4개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '3개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '2개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '1개 이하', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 5: 3, 4: 2, 3: 1, 2: 0.5 }
+                },
+                {
+                    id: 'C9', title: 'C9. 치매 예방과 치료보호', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'C9_1', text: '생활인의 치매 예방과 보호를 위한 계획이 있다.', ess: false },
+                        { id: 'C9_2', text: '치매의 위험 요인과 예방에 대한 생활인 교육이 실시되고 있다.', ess: false },
+                        { id: 'C9_3', text: '치매의 임상양상과 행동장애 이해에 대한 직원교육이 실시되고 있다.', ess: false },
+                        { id: 'C9_4', text: '치매의 조기발견과 치료보호를 위한 연계체계를 구축하고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '4개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
+                },
+                {
+                    id: 'C10', title: 'C10. 여가 프로그램', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'C10_1', text: '프로그램의 주간 또는 월간계획이 있으며 이를 안내하고 있다.', ess: false },
+                        { id: 'C10_2', text: '교양, 취미, 오락, 체육활동 등의 여가프로그램이 실시되고 있다.', ess: false },
+                        { id: 'C10_3', text: '운영일지가 기록(계획, 진행결과, 담당자 등) 되어있다.', ess: false },
+                        { id: 'C10_4', text: '연 1회 이상 프로그램에 대한 만족도 욕구조사를 실시하고 있다.', ess: false },
+                        { id: 'C10_5', text: '만족도·욕구조사의 결과를 프로그램 계획 시 반영하고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '5개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '4개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '3개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '2개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '1개 이하', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 5: 3, 4: 2, 3: 1, 2: 0.5 }
+                },
+                {
+                    id: 'C11', title: 'C11. 특성화 사업 성과', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'C11_1', text: '사업계획서를 체계적으로 수립하고 있다.', ess: false },
+                        { id: 'C11_2', text: '사업계획대로 사업을 수행 및 모니터링하고 있다.', ess: false },
+                        { id: 'C11_3', text: '사업을 진행하는데 필요한 충분한 인적·물적 자원을 확보하여 제공하고 있다.', ess: false },
+                        { id: 'C11_4', text: '사업성과를 적절하게 평가하고 있다.', ess: false },
+                        { id: 'C11_5', text: '생활인의 욕구를 충족시키고 문제상황을 개선한 구체적인 성과가 확인된다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '4개 이상 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 5: 3, 4: 3, 3: 2, 2: 1, 1: 0.5 }
+                },
+                {
+                    id: 'C12', title: 'C12. 서비스 제공 결과', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'C12_1', text: '서비스 만족도 조사가 적절하게 계획되어 있다.', ess: false },
+                        { id: 'C12_2', text: '연 1회 이상 정기적으로 실시하고 있다.', ess: false },
+                        { id: 'C12_3', text: '만족도 조사 결과보고서가 구비되어 있다.', ess: false },
+                        { id: 'C12_4', text: '조사결과를 시설운영 및 서비스 개발에 반영하고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '4개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
+                },
+                {
+                    id: 'C13', title: 'C13. 생활인의 변화', maxScore: 2, type: 'radio',
+                    items: [
+                        { id: 'C13_1', text: '생활인의 변화 정도(사전/사후)를 측정하고 있다.', score: 2 },
+                        { id: 'C13_2', text: '변화 정도를 측정하지 않고 있다.', score: 0 }
+                    ],
+                    tiers: [
+                        { score: 2, name: '탁월 (2점)', desc: '변화 정도 측정함', class: 'tier-3', emoji: '🏆' },
+                        { score: 0, name: '미흡 (0점)', desc: '측정 안함', class: 'tier-0', emoji: '🔴' }
+                    ]
+                }
+            ]
+        },
+        {
+            id: 'D', title: 'D. 생활인의 권리', max: 18,
+            indicators: [
+                {
+                    id: 'D1', title: 'D1. 개인정보 및 민감정보의 보호', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'D1_1', text: '개인정보와 민감정보 보호 및 유출 방지를 위한 규정 또는 지침이 마련되어 있다.', ess: false },
+                        { id: 'D1_2', text: '유출 방지를 위해 파일을 안전하게 보관·관리하고 있다.', ess: false },
+                        { id: 'D1_3', text: '보호 및 유출 방지를 위한 직원교육을 실시하고 있다.', ess: false },
+                        { id: 'D1_4', text: '개인정보 수집 및 활용에 대해 사전에 동의서를 받고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '4개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
+                },
+                {
+                    id: 'D2', title: 'D2. 학대예방 및 인권보호', maxScore: 3, type: 'check', essCount: 1,
+                    items: [
+                        { id: 'D2_1', text: '[필수] 인권보호 관련 규정이 마련되어 있다.', ess: true, tip: '2026년부터 실종 방지 지문 사전등록(안전Dream) 규정과 실제 등록 서류가 요구됩니다.' },
+                        { id: 'D2_2', text: '생활인에게 인권침해 예방과 대응방법에 대한 정보를 제공하고 있다.', ess: false },
+                        { id: 'D2_3', text: '생활인을 대상으로 인권교육을 계획하고 교육을 실시하고 있다.', ess: false },
+                        { id: 'D2_4', text: '모든 직원이 생활인의 인권보호를 위한 인권교육을 수료하고 있다.', ess: false, tip: '평가대상 기간 3년 동안 생활인 인권, 학대 행정처분 시 D영역 전체 0점 처리됩니다.' },
+                        { id: 'D2_5', text: '모든 직원이 생활인 인권보장에 대한 서약서를 작성하고 이를 보관하고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '5개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '필수 모두 포함 4개', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '필수 모두 포함 3개', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '필수 모두 포함 2개', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '필수 미포함 / 1개', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 5: 3, 4: 2, 3: 1, 2: 0.5 }
+                },
+                {
+                    id: 'D3', title: 'D3. 고충처리', maxScore: 3, type: 'check', essCount: 1,
+                    items: [
+                        { id: 'D3_1', text: '[필수] 생활인의 고충 및 이의를 처리하는 담당 직원이 있다.', ess: true },
+                        { id: 'D3_2', text: '생활인의 고충 및 이의제기 접수, 처리과정 및 결과를 문서화하고 있다.', ess: false },
+                        { id: 'D3_3', text: '홈페이지, SNS, 건의함 등 제기할 수 있는 통로가 마련되어 있다.', ess: false },
+                        { id: 'D3_4', text: '15일 이내에 그 진행과정 및 처리결과를 안내하고 공지하고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '4개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '필수 모두 포함 3개', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '필수 모두 포함 2개', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '필수 1개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '필수 미포함 / 0개', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
+                },
+                {
+                    id: 'D4', title: 'D4. 생활인의 자기결정권', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'D4_1', text: '충분한 정보제공과 생활인의 자기결정에 의한 서비스 동의서를 기록하고 있다.', ess: false },
+                        { id: 'D4_2', text: '자치활동에 대한 사업계획서가 있고 정기적으로 실시하고 있다.', ess: false },
+                        { id: 'D4_3', text: '생활인 자치활동 결과가 시설 게시판에 공지되고 시설 운영에 반영되고 있다.', ess: false },
+                        { id: 'D4_4', text: '생활인의 자기결정권을 다양한 분야에서 보장하고 있다.', ess: false },
+                        { id: 'D4_5', text: '생활인이 시설의 사업 및 운영에 대한 의사결정과정에 참여하고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '5개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '4개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '3개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '2개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '1개 이하', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 5: 3, 4: 2, 3: 1, 2: 0.5 }
+                },
+                {
+                    id: 'D5', title: 'D5. 생활인의 금전관리', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'D5_1', text: '자신의 금전을 자유롭게 관리·사용하며, 관리능력이 없는 경우 시설이 관리하고 증빙서류가 있다.', ess: false },
+                        { id: 'D5_2', text: '시설이 관리하고 있는 경우, 그 내용을 정기적으로 알려준다.', ess: false },
+                        { id: 'D5_3', text: '생활인의 금전관리 위임장을 받고 있다.', ess: false },
+                        { id: 'D5_4', text: '시설이 관리하고 있는 상황은 운영위원회에 정기적으로 보고하고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '4개 항목 (또는 스스로 관리)', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
+                },
+                {
+                    id: 'D6', title: 'D6. 권익옹호', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'D6_1', text: '생활인의 권익옹호 지원 체계가 마련되어 있다.', ess: false, tip: '상황접수-사정-계획-계약-지원-평가 6단계 명시 필수' },
+                        { id: 'D6_2', text: '생활인이 권익옹호 서비스 관련 정보를 제공받고 있다.', ess: false },
+                        { id: 'D6_3', text: '시설은 생활인 권익 향상을 위해 노력하고 있다.', ess: false },
+                        { id: 'D6_4', text: '시설은 생활인 권익옹호 관련 교육계획 및 실적이 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '4개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
+                }
+            ]
+        },
+        {
+            id: 'E', title: 'E. 시설운영전반', max: 7,
+            indicators: [
+                {
+                    id: 'E1', title: 'E1. 시설장 리더십', maxScore: 3, type: 'check', essCount: 0,
+                    items: [
+                        { id: 'E1_1', text: '시설장은 내·외부 환경변화를 인식하고 있다.', ess: false, tip: '평가 당일 인터뷰 진행용 답변 스크립트를 준비하십시오.' },
+                        { id: 'E1_2', text: '시설장은 조직의 문제해결 능력과 조직 발전 방안을 이해하고 있다.', ess: false },
+                        { id: 'E1_3', text: '시설장은 조직운영을 위한 중점과제를 도출하고 이행을 위한 노력을 하고 있다.', ess: false }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '3개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '2개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '1개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                    ],
+                    scores: { 3: 3, 2: 2, 1: 1 }
+                },
+                {
+                    id: 'E2', title: 'E2. 현장평가 질적 수준', maxScore: 3, type: 'radio',
+                    items: [
+                        { id: 'E2_1', text: 'A~D 중 4개 영역의 질적 수준이 적절하다.', score: 3 },
+                        { id: 'E2_2', text: '3개 영역의 질적 수준이 적절하다.', score: 2 },
+                        { id: 'E2_3', text: '2개 영역의 질적 수준이 적절하다.', score: 1 },
+                        { id: 'E2_4', text: '1개 영역의 질적 수준이 적절하다.', score: 0.5 },
+                        { id: 'E2_5', text: '모든 영역이 부적절하다.', score: 0 }
+                    ],
+                    tiers: [
+                        { score: 3, name: '탁월 (3점)', desc: '4개 영역 적절', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '우수 (2점)', desc: '3개 영역 적절', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '2개 영역 적절', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '1개 영역 적절', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '0개 영역 적절', class: 'tier-0', emoji: '🔴' }
+                    ]
+                },
+                {
+                    id: 'E3', title: 'E3. 자체평가의 정확성', maxScore: 1, type: 'radio',
+                    items: [
+                        { id: 'E3_1', text: '평가지표 3개 이하 수정됨', score: 1 },
+                        { id: 'E3_2', text: '평가지표 4개 수정됨', score: 0.8 },
+                        { id: 'E3_3', text: '평가지표 5개 수정됨', score: 0.6 },
+                        { id: 'E3_4', text: '평가지표 6개 수정됨', score: 0.4 },
+                        { id: 'E3_5', text: '평가지표 7개 이상 수정됨', score: 0 }
+                    ],
+                    tiers: [
+                        { score: 1, name: '탁월 (1점)', desc: '3개 이하 수정', class: 'tier-3', emoji: '🏆' },
+                        { score: 0.8, name: '우수 (0.8점)', desc: '4개 수정', class: 'tier-2', emoji: '🟢' },
+                        { score: 0.6, name: '양호 (0.6점)', desc: '5개 수정', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.4, name: '미흡 (0.4점)', desc: '6개 수정', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '7개 이상 수정', class: 'tier-0', emoji: '🔴' }
+                    ]
+                }
+            ]
+        }
+    ];
+
+    let checkState = {};
+    let scoreState = {};
+
+    function init() {
+        const cSaved = localStorage.getItem('yr_final_checks');
+        const sSaved = localStorage.getItem('yr_final_scores');
+        if (cSaved) checkState = JSON.parse(cSaved);
+        if (sSaved) scoreState = JSON.parse(sSaved);
+
+        renderSidebar();
+        renderMain('A'); 
+    }
+
+    function calculateIndicatorScore(ind) {
+        if (ind.type === 'radio') {
+            return scoreState[ind.id] !== undefined ? scoreState[ind.id] : -1;
+        }
+        
+        if (ind.type === 'radio_split') {
+            let total = 0;
+            let checked = false;
+            ind.items.forEach(item => {
+                if (checkState[item.id]) {
+                    total += item.score;
+                    checked = true;
+                }
+            });
+            return checked ? total : -1;
+        }
+
+        if (ind.type === 'check_split') {
+            let countA = 0; let countB = 0;
+            let checked = false;
+            ind.items.forEach(item => {
+                if (checkState[item.id]) {
+                    if (item.group === 'A') countA++;
+                    if (item.group === 'B') countB++;
+                    checked = true;
+                }
+            });
+            if(!checked) return -1;
+            const map = { 4: 2, 3: 1.5, 2: 1, 1: 0.5, 0: 0 };
+            return (map[countA] || 0) + (map[countB] || 0);
+        }
+
+        if (ind.type === 'check') {
+            let checkedCount = 0;
+            let essCount = 0;
+            let checkedAny = false;
+            ind.items.forEach(item => {
+                if(checkState[item.id]) {
+                    checkedCount++;
+                    if(item.ess) essCount++;
+                    checkedAny = true;
+                }
+            });
+
+            if (!checkedAny) return -1;
+            if (essCount < ind.essCount) return 0;
+            return ind.scores[checkedCount] !== undefined ? ind.scores[checkedCount] : 0;
+        }
+        return -1;
+    }
+
+    function renderSidebar() {
+        const navList = document.getElementById('navList');
+        navList.innerHTML = '';
+        let totalPoints = 0;
+
+        manualData.forEach(domain => {
+            let currentScore = 0;
+            domain.indicators.forEach(ind => {
+                let score = calculateIndicatorScore(ind);
+                if(score > -1) currentScore += score;
+            });
+            totalPoints += currentScore;
+
+            const li = document.createElement('li');
+            li.className = `nav-item ${document.getElementById('mainContent').getAttribute('data-active') === domain.id ? 'active' : ''}`;
+            li.onclick = () => renderMain(domain.id);
+            li.innerHTML = `
+                <span>${domain.title}</span>
+                <span class="nav-score">${currentScore.toFixed(1)} / ${domain.max}</span>
+            `;
+            navList.appendChild(li);
+        });
+
+        document.getElementById('masterScore').innerText = totalPoints.toFixed(1);
+        document.getElementById('masterPercent').innerText = `100점 만점 기준 (${totalPoints.toFixed(1)}% 진행)`;
+    }
+
+    function renderMain(domainId) {
+        document.getElementById('mainContent').setAttribute('data-active', domainId);
+        const domain = manualData.find(d => d.id === domainId);
+        let html = `<div class="domain-header">${domain.title}</div>`;
+
+        domain.indicators.forEach(ind => {
+            const currentVal = calculateIndicatorScore(ind);
+            const valDisplay = currentVal > -1 ? currentVal.toFixed(1) : "0.0";
+            
+            html += `
+                <div class="indicator-card">
+                    <div class="indicator-top">
+                        <div class="indicator-title">${ind.title}</div>
+                        <div class="indicator-badge">${valDisplay} / ${ind.maxScore}점</div>
+                    </div>
+                    
+                    <div class="grid-container">
+                        <div class="content-panel">
+                            <div class="panel-title">평가내용 점검 (항목 클릭 시 배점 자동 산정)</div>
+            `;
+
+            if (ind.type.includes('check')) {
+                ind.items.forEach(item => {
+                    const isChecked = checkState[item.id] ? 'checked' : '';
+                    const essBadge = item.ess ? `<span class="badge-ess">필수</span>` : '';
+                    html += `
+                        <div class="check-item ${isChecked}" onclick="toggleCheck('${item.id}', '${domainId}')">
+                            <div class="custom-checkbox"></div>
+                            <div class="item-text">${essBadge}${item.text}</div>
+                        </div>
+                    `;
+                });
+            } else if (ind.type.includes('radio')) {
+                ind.items.forEach(item => {
+                    const isChecked = (ind.type === 'radio_split') 
+                        ? (checkState[item.id] ? 'checked' : '') 
+                        : (scoreState[ind.id] === item.score ? 'checked' : '');
+                    
+                    html += `
+                        <div class="check-item ${isChecked}" onclick="selectRadio('${ind.id}', '${item.id}', ${item.score}, '${domainId}', '${ind.type}', '${item.group || ''}')">
+                            <div class="custom-radio"></div>
+                            <div class="item-text">${item.text}</div>
+                        </div>
+                    `;
+                });
+            }
+
+            html += `
+                        </div>
+                        
+                        <div class="tier-panel">
+                            <div class="panel-title">매뉴얼 채점 기준 (자동 산정 결과 알림판)</div>
+            `;
+
+            ind.tiers.forEach(tier => {
+                const isActive = currentVal === tier.score ? `active ${tier.class}` : '';
+                html += `
+                    <div class="tier-box ${isActive}">
+                        <div class="tier-emoji">${tier.emoji}</div>
+                        <div class="tier-info">
+                            <div class="tier-name">${tier.name}</div>
+                            <div class="tier-desc">${tier.desc}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        document.getElementById('mainContent').innerHTML = html;
+        renderSidebar(); 
+    }
+
+    function toggleCheck(itemId, domainId) {
+        checkState[itemId] = !checkState[itemId];
+        saveState();
+        renderMain(domainId);
+    }
+
+    function selectRadio(indId, itemId, scoreValue, domainId, type, group) {
+        if (type === 'radio_split') {
+            const domain = manualData.find(d => d.id === domainId);
+            const ind = domain.indicators.find(i => i.id === indId);
+            ind.items.forEach(i => {
+                if (i.group === group && i.id !== itemId) delete checkState[i.id];
+            });
+            checkState[itemId] = true;
+        } else {
+            scoreState[indId] = scoreValue;
+        }
+        saveState();
+        renderMain(domainId);
+    }
+
+    function saveState() {
+        localStorage.setItem('yr_final_checks', JSON.stringify(checkState));
+        localStorage.setItem('yr_final_scores', JSON.stringify(scoreState));
+    }
+
+    function resetData() {
+        if(confirm("모든 진단 체크 데이터를 초기화하시겠습니까?")) {
+            checkState = {};
+            scoreState = {};
+            saveState();
+            renderMain('A');
+        }
+    }
+
+    function saveAsPDF() {
+        const element = document.getElementById('exportArea');
+        const opt = {
+            margin:       10,
+            filename:     '2027_양로시설_평가시뮬레이터_결과.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+
+    function openConsultingReport() {
+        const modal = document.getElementById('reportModal');
+        const rBody = document.getElementById('reportBody');
+        
+        let html = '';
+        let missingFound = false;
+
+        manualData.forEach(domain => {
+            let domainMiss = '';
+            
+            domain.indicators.forEach(ind => {
+                let score = calculateIndicatorScore(ind);
+                if (score < ind.maxScore) {
+                    domainMiss += `<h4>🔸 ${ind.title} <span style="color:#8E8E93; font-weight:normal;">(현재: ${score > -1 ? score : 0}점 / ${ind.maxScore}점)</span></h4>`;
+                    
+                    if (ind.type.includes('check')) {
+                        ind.items.forEach(item => {
+                            if (!checkState[item.id]) {
+                                let badge = item.ess ? `<span class="badge-ess" style="padding:2px 4px; margin-right:4px;">필수 누락</span>` : ``;
+                                domainMiss += `<div class="miss-item">${badge} ${item.text}</div>`;
+                                if (item.tip) {
+                                    domainMiss += `<div class="consult-tip">💡 컨설팅 팁: ${item.tip}</div>`;
+                                }
+                            }
+                        });
+                    } else {
+                        domainMiss += `<div class="miss-item" style="color:var(--text-gray);">선택된 항목이 만점 기준에 부합하지 않거나 점검되지 않았습니다.</div>`;
+                    }
+                    domainMiss += `<br>`;
+                }
+            });
+
+            if (domainMiss !== '') {
+                missingFound = true;
+                html += `
+                    <div class="report-section">
+                        <h3>[${domain.title}] 누락 서류 및 감점 요인 분석</h3>
+                        ${domainMiss}
+                    </div>
+                `;
+            }
+        });
+
+        if (!missingFound) {
+            html = `<div style="text-align:center; padding: 40px; font-size:18px; color:var(--green-ok); font-weight:700;">모든 평가 항목이 100점 만점 기준을 충족하였습니다!</div>`;
+        }
+
+        rBody.innerHTML = html;
+        modal.style.display = 'flex';
+    }
+
+    function closeReport() {
+        document.getElementById('reportModal').style.display = 'none';
+    }
+
+    window.onload = init;
+</script>
+
+</body>
+</html>
