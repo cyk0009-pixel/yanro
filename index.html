@@ -2,9 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2027년 양로시설 스마트 평가대비 시뮬레이터</title>
-    <!-- PDF 생성을 위한 html2pdf 라이브러리 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>[2027년 양로시설 스마트 평가대비 시뮬레이터]</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
@@ -16,12 +15,11 @@
             --border-line: #E5E5EA;
             --red-alert: #FF3B30;
             
-            /* 티어별 색상 */
-            --color-tier-3: #E1F0FF; /* 탁월 */
-            --color-tier-2: #E8F5E9; /* 우수 */
-            --color-tier-1: #FFF9C4; /* 양호 */
-            --color-tier-05: #FFE0B2; /* 미흡 */
-            --color-tier-0: #FFEBEE; /* 매우미흡 */
+            --color-tier-3: #E1F0FF; 
+            --color-tier-2: #E8F5E9; 
+            --color-tier-1: #FFF9C4; 
+            --color-tier-05: #FFE0B2; 
+            --color-tier-0: #FFEBEE; 
             
             --border-tier-3: #007AFF;
             --border-tier-2: #4CAF50;
@@ -42,7 +40,6 @@
             font-size: 14px;
         }
 
-        /* 왼쪽 사이드바 영역 */
         .sidebar {
             width: 320px;
             background-color: var(--bg-base);
@@ -128,7 +125,6 @@
         .nav-item:hover { background-color: #E5E5EA; }
         .nav-item.active { background-color: var(--blue-main); color: white; }
 
-        /* 메인 컨텐츠 영역 */
         .main-container {
             flex: 1;
             display: flex;
@@ -199,6 +195,7 @@
             font-size: 15px;
             font-weight: 700;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            white-space: nowrap;
         }
 
         .grid-container {
@@ -207,7 +204,6 @@
             gap: 20px;
         }
 
-        /* 왼쪽 평가내용 점검 패널 */
         .content-panel {
             background-color: var(--bg-card);
             border-radius: 16px;
@@ -234,7 +230,7 @@
         .check-item:hover { background-color: #F8F8F8; }
         .check-item.checked { background-color: #F0F8FF; }
         
-        .custom-checkbox {
+        .custom-checkbox, .custom-radio {
             width: 20px;
             height: 20px;
             border-radius: 6px;
@@ -246,7 +242,9 @@
             flex-shrink: 0;
             margin-top: 1px;
         }
-        .check-item.checked .custom-checkbox {
+        .custom-radio { border-radius: 50%; }
+        
+        .check-item.checked .custom-checkbox, .check-item.checked .custom-radio {
             background-color: var(--blue-main);
             border-color: var(--blue-main);
         }
@@ -259,25 +257,11 @@
             transform: rotate(45deg);
             margin-bottom: 2px;
         }
-
-        .custom-radio {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: 2px solid #C7C7CC;
-            margin-right: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
-        .check-item.checked .custom-radio { border-color: var(--blue-main); }
         .check-item.checked .custom-radio::after {
             content: '';
             width: 10px;
             height: 10px;
-            background-color: var(--blue-main);
+            background-color: white;
             border-radius: 50%;
         }
 
@@ -292,7 +276,6 @@
             font-weight: 700;
         }
 
-        /* 오른쪽 매뉴얼 자동 산정 인디케이터 (작고 클릭 안됨) */
         .tier-panel {
             background-color: transparent;
             display: flex;
@@ -317,7 +300,6 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
-        /* 활성화된 티어별 색상 적용 */
         .tier-box.active.tier-3 { background-color: var(--color-tier-3); border-color: var(--border-tier-3); }
         .tier-box.active.tier-2 { background-color: var(--color-tier-2); border-color: var(--border-tier-2); }
         .tier-box.active.tier-1 { background-color: var(--color-tier-1); border-color: var(--border-tier-1); }
@@ -329,7 +311,6 @@
         .tier-name { font-size: 14px; font-weight: 700; color: var(--text-dark); margin-bottom: 2px;}
         .tier-desc { font-size: 12px; color: #666; }
 
-        /* 컨설팅 모달 */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background-color: rgba(0,0,0,0.6);
@@ -362,7 +343,6 @@
         .miss-item { font-size: 14px; margin-bottom: 8px; line-height: 1.5;}
         .consult-tip { display: block; font-size: 13px; color: #D32F2F; margin-top: 4px; padding-left: 10px;}
 
-        /* 하단 저작권 푸터 */
         .footer-copyright {
             text-align: center;
             padding: 30px 20px;
@@ -372,13 +352,78 @@
             margin-top: 40px;
         }
 
+        /* 모바일 최적화 미디어 쿼리 */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                overflow: visible;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--border-line);
+                overflow: visible;
+            }
+            .sidebar-title {
+                padding: 20px 15px 10px 15px;
+            }
+            .nav-list {
+                display: flex;
+                overflow-x: auto;
+                padding: 0 15px 10px 15px;
+                margin: 0;
+                white-space: nowrap;
+                gap: 8px;
+                scrollbar-width: none; /* Firefox */
+            }
+            .nav-list::-webkit-scrollbar {
+                display: none; /* Chrome, Safari */
+            }
+            .nav-item {
+                flex: 0 0 auto;
+                margin-bottom: 0;
+                padding: 10px 14px;
+            }
+            .main-container {
+                overflow: visible;
+            }
+            .scroll-area {
+                padding: 20px 15px;
+                overflow: visible;
+            }
+            .top-toolbar {
+                padding: 12px 15px;
+                justify-content: center;
+            }
+            .grid-container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .indicator-card {
+                padding: 20px 15px;
+            }
+            .indicator-top {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            .modal-content {
+                padding: 25px 15px;
+            }
+        }
+
         /* 인쇄 최적화 */
         @media print {
             .sidebar, .top-toolbar, .btn-consult { display: none !important; }
-            .main-container { overflow: visible !important; height: auto !important; }
+            body { background-color: white; display: block; overflow: visible; height: auto; }
+            .main-container { overflow: visible !important; height: auto !important; display: block; }
             .scroll-area { overflow: visible !important; padding: 0 !important; }
-            body { background-color: white; }
-            .indicator-card { break-inside: avoid; border: 1px solid #ccc; box-shadow: none; }
+            .indicator-card { break-inside: avoid; border: 1px solid #ccc; box-shadow: none; margin-bottom: 20px; }
+            .grid-container { display: block; }
+            .content-panel { border: none; padding: 0; margin-bottom: 15px; }
+            .tier-panel { border: 1px solid #ccc; background: #fff; }
         }
     </style>
 </head>
@@ -386,7 +431,7 @@
 
     <div class="sidebar">
         <div class="sidebar-title">
-            <h1>2027년 양로시설 스마트 평가대비 시뮬레이터</h1>
+            <h1>[2027년 양로시설 스마트 평가대비 시뮬레이터]</h1>
         </div>
         
         <div class="score-board">
@@ -413,7 +458,7 @@
             
             <div class="footer-copyright">
                 ©2026 한국노인복지중앙회 최영경 All rights reserved.<br>
-                무료로 자유롭게 사용가능하지만 무단배포는 금지합니다. 프로그램 관련문의는 cyk0009@gmail.com로 부탁드립니다.
+                무료로 자유롭게 사용가능하나 무단배포는 금지합니다.
             </div>
         </div>
     </div>
@@ -626,7 +671,7 @@
                         { id: 'B8_7', text: '법인에서 정기적으로 별도 수당을 지급하고 있다.', ess: false }
                     ],
                     tiers: [
-                        { score: 2, name: '탁월 (2점)', desc: '7개 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 2, name: '탁월 (2점)', desc: '7개 이상 항목 해당', class: 'tier-3', emoji: '🏆' },
                         { score: 1.5, name: '우수 (1.5점)', desc: '필수 모두 포함 6개', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '필수 모두 포함 5개', class: 'tier-1', emoji: '🟡' },
                         { score: 0.5, name: '미흡 (0.5점)', desc: '필수 모두 포함 4개', class: 'tier-05', emoji: '🟠' },
@@ -686,7 +731,7 @@
                         { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
                         { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 항목 없음', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
                 },
@@ -706,7 +751,7 @@
                         { score: 2, name: '우수 (2점)', desc: '5개 항목 해당', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '4개 항목 해당', class: 'tier-1', emoji: '🟡' },
                         { score: 0.5, name: '미흡 (0.5점)', desc: '3개 항목 해당', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '2개 이하', class: 'tier-0', emoji: '🔴' }
+                        { score: 0, name: '매우미흡 (0점)', desc: '2개 이하 항목 해당', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 7: 3, 6: 3, 5: 2, 4: 1, 3: 0.5 }
                 },
@@ -723,7 +768,7 @@
                         { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
                         { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 항목 없음', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
                 },
@@ -740,7 +785,7 @@
                         { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
                         { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 항목 없음', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
                 },
@@ -774,7 +819,7 @@
                         { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
                         { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 항목 없음', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
                 },
@@ -791,7 +836,7 @@
                         { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
                         { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 항목 없음', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
                 },
@@ -809,7 +854,7 @@
                         { score: 2, name: '우수 (2점)', desc: '4개 항목 해당', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '3개 항목 해당', class: 'tier-1', emoji: '🟡' },
                         { score: 0.5, name: '미흡 (0.5점)', desc: '2개 항목 해당', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '1개 이하', class: 'tier-0', emoji: '🔴' }
+                        { score: 0, name: '매우미흡 (0점)', desc: '1개 이하 항목 해당', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 5: 3, 4: 2, 3: 1, 2: 0.5 }
                 },
@@ -826,7 +871,7 @@
                         { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
                         { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 항목 없음', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
                 },
@@ -844,7 +889,7 @@
                         { score: 2, name: '우수 (2점)', desc: '4개 항목 해당', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '3개 항목 해당', class: 'tier-1', emoji: '🟡' },
                         { score: 0.5, name: '미흡 (0.5점)', desc: '2개 항목 해당', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '1개 이하', class: 'tier-0', emoji: '🔴' }
+                        { score: 0, name: '매우미흡 (0점)', desc: '1개 이하 항목 해당', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 5: 3, 4: 2, 3: 1, 2: 0.5 }
                 },
@@ -858,11 +903,11 @@
                         { id: 'C11_5', text: '생활인의 욕구를 충족시키고 문제상황을 개선한 구체적인 성과가 확인된다.', ess: false }
                     ],
                     tiers: [
-                        { score: 3, name: '탁월 (3점)', desc: '4개 이상 항목 해당', class: 'tier-3', emoji: '🏆' },
+                        { score: 3, name: '탁월 (3점)', desc: '4개 이상 항목 해당 (최대 배점)', class: 'tier-3', emoji: '🏆' },
                         { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
                         { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 항목 없음', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 5: 3, 4: 3, 3: 2, 2: 1, 1: 0.5 }
                 },
@@ -879,7 +924,7 @@
                         { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
                         { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 항목 없음', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
                 },
@@ -912,7 +957,7 @@
                         { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
                         { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 항목 없음', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
                 },
@@ -927,10 +972,10 @@
                     ],
                     tiers: [
                         { score: 3, name: '탁월 (3점)', desc: '5개 항목 해당', class: 'tier-3', emoji: '🏆' },
-                        { score: 2, name: '우수 (2점)', desc: '필수 모두 포함 4개', class: 'tier-2', emoji: '🟢' },
-                        { score: 1, name: '양호 (1점)', desc: '필수 모두 포함 3개', class: 'tier-1', emoji: '🟡' },
-                        { score: 0.5, name: '미흡 (0.5점)', desc: '필수 모두 포함 2개', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '필수 미포함 / 1개', class: 'tier-0', emoji: '🔴' }
+                        { score: 2, name: '우수 (2점)', desc: '필수항목 포함 4개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '필수항목 포함 3개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '필수항목 포함 2개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '필수 미포함 또는 1개 항목', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 5: 3, 4: 2, 3: 1, 2: 0.5 }
                 },
@@ -944,10 +989,10 @@
                     ],
                     tiers: [
                         { score: 3, name: '탁월 (3점)', desc: '4개 항목 해당', class: 'tier-3', emoji: '🏆' },
-                        { score: 2, name: '우수 (2점)', desc: '필수 모두 포함 3개', class: 'tier-2', emoji: '🟢' },
-                        { score: 1, name: '양호 (1점)', desc: '필수 모두 포함 2개', class: 'tier-1', emoji: '🟡' },
-                        { score: 0.5, name: '미흡 (0.5점)', desc: '필수 1개 항목 해당', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '필수 미포함 / 0개', class: 'tier-0', emoji: '🔴' }
+                        { score: 2, name: '우수 (2점)', desc: '필수항목 포함 3개 항목 해당', class: 'tier-2', emoji: '🟢' },
+                        { score: 1, name: '양호 (1점)', desc: '필수항목 포함 2개 항목 해당', class: 'tier-1', emoji: '🟡' },
+                        { score: 0.5, name: '미흡 (0.5점)', desc: '필수항목 1개 항목 해당', class: 'tier-05', emoji: '🟠' },
+                        { score: 0, name: '매우미흡 (0점)', desc: '필수 미포함 또는 해당 없음', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
                 },
@@ -965,7 +1010,7 @@
                         { score: 2, name: '우수 (2점)', desc: '4개 항목 해당', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '3개 항목 해당', class: 'tier-1', emoji: '🟡' },
                         { score: 0.5, name: '미흡 (0.5점)', desc: '2개 항목 해당', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '1개 이하', class: 'tier-0', emoji: '🔴' }
+                        { score: 0, name: '매우미흡 (0점)', desc: '1개 이하 항목 해당', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 5: 3, 4: 2, 3: 1, 2: 0.5 }
                 },
@@ -978,11 +1023,11 @@
                         { id: 'D5_4', text: '시설이 관리하고 있는 상황은 운영위원회에 정기적으로 보고하고 있다.', ess: false }
                     ],
                     tiers: [
-                        { score: 3, name: '탁월 (3점)', desc: '4개 항목 (또는 스스로 관리)', class: 'tier-3', emoji: '🏆' },
+                        { score: 3, name: '탁월 (3점)', desc: '4개 항목 해당 (또는 전원 본인 직접 관리)', class: 'tier-3', emoji: '🏆' },
                         { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
                         { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 항목 없음', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
                 },
@@ -999,7 +1044,7 @@
                         { score: 2, name: '우수 (2점)', desc: '3개 항목 해당', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '2개 항목 해당', class: 'tier-1', emoji: '🟡' },
                         { score: 0.5, name: '미흡 (0.5점)', desc: '1개 항목 해당', class: 'tier-05', emoji: '🟠' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 항목 없음', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 4: 3, 3: 2, 2: 1, 1: 0.5 }
                 }
@@ -1019,7 +1064,7 @@
                         { score: 3, name: '탁월 (3점)', desc: '3개 항목 해당', class: 'tier-3', emoji: '🏆' },
                         { score: 2, name: '우수 (2점)', desc: '2개 항목 해당', class: 'tier-2', emoji: '🟢' },
                         { score: 1, name: '양호 (1점)', desc: '1개 항목 해당', class: 'tier-1', emoji: '🟡' },
-                        { score: 0, name: '매우미흡 (0점)', desc: '해당 없음', class: 'tier-0', emoji: '🔴' }
+                        { score: 0, name: '매우미흡 (0점)', desc: '해당 항목 없음', class: 'tier-0', emoji: '🔴' }
                     ],
                     scores: { 3: 3, 2: 2, 1: 1 }
                 },
